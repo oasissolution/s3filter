@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  s3filter:
+    image: s3filter
+    build:
+      context: .
+      dockerfile: ./Dockerfile
