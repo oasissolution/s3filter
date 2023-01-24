@@ -43,7 +43,6 @@ var (
 | `-with-word` | No | A string containing a word that must be contained in `words` of a JSON objec to be selected. |
 */
 func processArgs() {
-	var err error
 	S3URI = flag.String("input", "", "An S3 URI (`s3://{bucket}/{key}`) that refers to the source object to be filtered.")
 	WithID = flag.Int64("with-id", 0, "An integer that contains the `id` of a JSON object to be selected.")
 	WithWord = flag.String("with-word", "", "A string containing a word that must be contained in `words` of a JSON objec to be selected.")
@@ -65,6 +64,7 @@ func processArgs() {
 		os.Exit(1)
 	}
 
+	var err error
 	if *fromTime != "" {
 		FromTime, err = time.Parse(time.RFC3339, *fromTime)
 		if err != nil {
