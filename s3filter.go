@@ -80,57 +80,6 @@ func processArgs() {
 	}
 }
 
-func main() {
-
-	//parse arguments
-	processArgs()
-
-	//parse s3URI for Bucket and Key
-	s3Info := strings.Split((*S3URI)[5:len(*S3URI)], "/")
-	if len(s3Info) != 2 {
-		exitErrorf("Failed to parse S3 URI %q \n", *S3URI)
-	}
-
-	s3_bucket := s3Info[0]
-	s3_key := s3Info[1]
-
-	// Create Session
-	sess, err := session.NewSession()
-	if err != nil {
-		exitErrorf("Failed to create new session. %v\n", err)
-		return
-	}
-
-	//Create a downloader with the session and custom options
-	downloader := s3manager.NewDownloader(sess, func(d *s3manager.Downloader) {
-		d.PartSize = 64 * 1024 * 1024 //64MB per part
-		d.Concurrency = 6
-	})
-
-	//download file from AWS S3 to memory
-	buff := &aws.WriteAtBuffer{}
-	_, err = downloader.Download(buff, &s3.GetObjectInput{
-		Bucket: aws.String(s3_bucket),
-		Key:    aws.String(s3_key),
-	})
-
-	if err != nil {
-		exitErrorf("Unable to download file %v", err)
-	}
-
-	//Extract *.gz
-	ndJsonBytes, err := gzUnzip(buff.Bytes())
-	if err != nil {
-		exitErrorf("Unable to unzip file %v", err)
-	}
-
-	//Decode ndjson from bytes and print record that matches with criteria
-	err = filter(ndJsonBytes)
-	if err != nil {
-		exitErrorf("Unable to decode ndJson file %v", err)
-	}
-}
-
 // parse bytes array to ndJson and filter based on criteria
 func filter(src []byte) error {
 	decorder := json.NewDecoder(bytes.NewReader(src))
@@ -193,4 +142,55 @@ func gzUnzip(gzBytes []byte) ([]byte, error) {
 func exitErrorf(msg string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, msg+"\n", args...)
 	os.Exit(1)
+}
+
+func main() {
+
+	//parse arguments
+	processArgs()
+
+	//parse s3URI for Bucket and Key
+	s3Info := strings.Split((*S3URI)[5:len(*S3URI)], "/")
+	if len(s3Info) != 2 {
+		exitErrorf("Failed to parse S3 URI %q \n", *S3URI)
+	}
+
+	s3_bucket := s3Info[0]
+	s3_key := s3Info[1]
+
+	// Create Session
+	sess, err := session.NewSession()
+	if err != nil {
+		exitErrorf("Failed to create new session. %v\n", err)
+		return
+	}
+
+	//Create a downloader with the session and custom options
+	downloader := s3manager.NewDownloader(sess, func(d *s3manager.Downloader) {
+		d.PartSize = 64 * 1024 * 1024 //64MB per part
+		d.Concurrency = 6
+	})
+
+	//download file from AWS S3 to memory
+	buff := &aws.WriteAtBuffer{}
+	_, err = downloader.Download(buff, &s3.GetObjectInput{
+		Bucket: aws.String(s3_bucket),
+		Key:    aws.String(s3_key),
+	})
+
+	if err != nil {
+		exitErrorf("Unable to download file %v", err)
+	}
+
+	//Extract *.gz
+	ndJsonBytes, err := gzUnzip(buff.Bytes())
+	if err != nil {
+		exitErrorf("Unable to unzip file %v", err)
+	}
+
+	//Decode ndjson from bytes and print record that matches with criteria
+	err = filter(ndJsonBytes)
+	if err != nil {
+		exitErrorf("Unable to decode ndJson file %v", err)
+	}
 }
